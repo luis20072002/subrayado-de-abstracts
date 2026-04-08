@@ -1,0 +1,328 @@
+---
+title: "Reto 3: Subrayado de abstracts"
+format:
+    dashboard:
+        css: styles.css
+---
+
+## Row {.tabset}
+
+### Presentación
+::: {style="display: flex; justify-content: center; align-items: center; min-height: 70vh; font-family: system-ui, sans-serif;"}
+
+::: {style="text-align: center; border: 1px solid #e0e0e0; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); max-width: 700px; background-color: #ffffff;"}
+
+<h1 style="font-size: 2.2rem; font-weight: 700; color: #1a2b4c; margin-bottom: 25px;">
+Reto 3: Subrayado de abstracts
+</h1>
+
+<div style="width: 60px; height: 3px; background-color: #007bff; margin: 0 auto 25px auto;"></div>
+
+<h3 style="font-size: 1.2rem; color: #6c757d; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px;">
+Autores
+</h3>
+
+<p style="font-size: 1.1rem; color: #333; margin: 8px 0;">Santiago José Cuesta Maza — <strong>T00082473</strong></p>
+<p style="font-size: 1.1rem; color: #333; margin: 8px 0;">Valeria Estefanía Berrio Payares — <strong>T00082178</strong></p>
+<p style="font-size: 1.1rem; color: #333; margin: 8px 0;">Luis Eduardo Mendoza Angulo — <strong>T00082297</strong></p>
+<p style="font-size: 1.1rem; color: #333; margin: 8px 0;">Deiner de Jesús Gonzalez Paredes — <strong>T00082648</strong></p>
+<p style="font-size: 1.1rem; color: #333; margin: 8px 0;">Danna Valentina Zuluaga Hernández — <strong>T00082548</strong></p>
+
+<div style="margin-top: 35px; border-top: 1px solid #eee; padding-top: 20px;">
+<p style="font-size: 0.95rem; color: #95a5a6; margin: 0;">2026</p>
+</div>
+
+:::
+
+:::
+
+### Contexto
+
+En este reto, se nos ha proporcionado una base de datos que contiene artículos científicos relacionados con el uso de modelos de lenguaje grande (LLM) en el ámbito educativo. El objetivo es utilizar lo aprendido en clase y lo investigado en internet para lograr resaltar o subrayar un conjunto de plabras clave dentro de los abstracts de los artículos, con el fin de facilitar la identificación de temas relevantes y tendencias en el campo de los LLM aplicados a la educación.
+
+### Lectura de datos
+
+```{python}
+# lectura 
+import pandas as pd
+
+df = pd.read_csv("2_base_maestra_LIMPIA.csv")
+df.head()
+```
+
+
+### Palabras a buscar
+
+- Inclusión:
+
+**GPT Y family**,
+**BERT Y family**,
+**T5**,
+**LLaMA**,
+**PaLM**,
+**Gemini**,
+**Mistral**,
+**DeepSeek**,
+**LLMS**
+
+- Exclusión
+
+**No LLM usage**,
+**NLP**,
+**machine learning** ,
+**IA Y familia**
+
+### Filtrado de los abstract
+
+
+```{python}
+from IPython.display import display, HTML
+import re
+
+
+# ─────────────────────────────────────────────
+# Palabras clave
+# ─────────────────────────────────────────────
+palabras_inclusion = [
+    "GPT", "BERT", "T5", "LLaMA", "PaLM",
+    "Gemini", "Mistral", "DeepSeek", "LLMS",
+]
+
+palabras_exclusion = [
+    "No LLM usage", "NLP", "machine learning", "IA Y familia"
+]
+
+
+# ─────────────────────────────────────────────
+# Clase resaltador
+# ─────────────────────────────────────────────
+class ResaltadorDeAbstracts:
+    """
+    Resalta palabras clave en abstracts científicos usando HTML inline.
+    Diferencia visualmente términos de inclusión (amarillo) y
+    exclusión (rojo) mediante estilos CSS aplicados con IPython.display.
+    """
+
+    _ESTILO_INCLUSION = (
+        "background-color:#fff176; color:#1a1a1a; "
+        "border-radius:3px; padding:0 3px; font-weight:600;"
+    )
+    _ESTILO_EXCLUSION = (
+        "background-color:#ffcdd2; color:#b71c1c; "
+        "border-radius:3px; padding:0 3px; font-weight:600;"
+    )
+
+    def __init__(self, terminos_inclusion: list, terminos_exclusion: list):
+        """
+        Args:
+            terminos_inclusion: Palabras que indican uso de LLM.
+            terminos_exclusion: Palabras que indican ausencia de LLM.
+        """
+        self.terminos_inclusion = terminos_inclusion
+        self.terminos_exclusion = terminos_exclusion
+
+    def _aplicar_marcado(self, texto: str, terminos: list, estilo: str) -> str:
+        """
+        Envuelve cada coincidencia de *terminos* en *texto* con <mark> inline.
+
+        Args:
+            texto: Texto a procesar.
+            terminos: Lista de palabras o frases a buscar.
+            estilo: Cadena CSS inline para el <mark>.
+
+        Returns:
+            Texto con coincidencias envueltas en <mark style='...'>.
+        """
+        for termino in terminos:
+            patron = re.compile(re.escape(termino), re.IGNORECASE)
+            texto = patron.sub(
+                lambda m, est=estilo: f"<mark style='{est}'>{m.group(0)}</mark>",
+                texto,
+            )
+        return texto
+
+    def resaltar(self, texto: str) -> str:
+        """
+        Aplica resaltado de inclusión y exclusión sobre un mismo texto.
+
+        Args:
+            texto: Abstract a procesar.
+
+        Returns:
+            Texto HTML con ambos tipos de marcado aplicados.
+        """
+        texto = str(texto).replace("\n", " ")
+        texto = self._aplicar_marcado(texto, self.terminos_inclusion, self._ESTILO_INCLUSION)
+        texto = self._aplicar_marcado(texto, self.terminos_exclusion, self._ESTILO_EXCLUSION)
+        return texto
+
+    def _construir_leyenda(self) -> str:
+        """Construye el HTML de la leyenda de colores."""
+        return (
+            "<div style='margin-bottom:1.5rem; display:flex; gap:1.5rem; flex-wrap:wrap;'>"
+            f"<span><mark style='{self._ESTILO_INCLUSION}'>Inclusión</mark>"
+            " — Indica uso de LLM</span>"
+            f"<span><mark style='{self._ESTILO_EXCLUSION}'>Exclusión</mark>"
+            " — Indica ausencia de LLM</span>"
+            "</div>"
+        )
+
+    def _construir_articulo(self, numero: int, titulo: str, abstract: str) -> str:
+        """
+        Construye el bloque HTML de un artículo individual.
+
+        Args:
+            numero: Número de artículo (base 1).
+            titulo: Título del artículo.
+            abstract: Abstract del artículo.
+
+        Returns:
+            Cadena HTML del artículo con resaltado aplicado.
+        """
+        titulo_limpio = str(titulo).replace("\n", " ")
+        abstract_resaltado = self.resaltar(abstract)
+        return (
+            f"<h3>Artículo {numero}</h3>"
+            f"<p><strong>Título:</strong> {titulo_limpio}</p>"
+            f"<p><strong>Abstract:</strong> {abstract_resaltado}</p>"
+            "<hr>"
+        )
+
+    def renderizar_todos(
+        self,
+        dataframe,
+        col_titulo: str = "title",
+        col_abstract: str = "abstract",
+    ):
+        """
+        Renderiza todos los artículos del DataFrame con IPython.display.
+
+        Args:
+            dataframe: pandas.DataFrame con los artículos.
+            col_titulo: Nombre de la columna de títulos.
+            col_abstract: Nombre de la columna de abstracts.
+        """
+        bloques = [self._construir_leyenda()]
+
+        for numero, (_, fila) in enumerate(dataframe.iterrows(), start=1):
+            bloque = self._construir_articulo(
+                numero, fila[col_titulo], fila[col_abstract]
+            )
+            bloques.append(bloque)
+
+        display(HTML("".join(bloques)))
+
+
+# ─────────────────────────────────────────────
+# Ejecución
+# ─────────────────────────────────────────────
+resaltador = ResaltadorDeAbstracts(
+    terminos_inclusion=palabras_inclusion,
+    terminos_exclusion=palabras_exclusion,
+)
+
+resaltador.renderizar_todos(df)
+```
+
+
+### Explicación del desarrollo del reto
+
+#### Librerías utilizadas
+
+**`pandas`** — Biblioteca de análisis de datos. Se usa para leer el archivo `.csv` con `pd.read_csv()` y trabajar con él como un **DataFrame**: una tabla con filas y columnas que es fácil de recorrer e indexar.
+
+**`re`** — Módulo estándar de Python para **expresiones regulares**. Permite buscar patrones de texto dentro de cadenas de forma flexible y eficiente, sin importar mayúsculas ni minúsculas.
+
+**`IPython.display`** — Submódulo de IPython que expone las funciones `display()` y `HTML()`. Juntas permiten **renderizar HTML directamente** en la salida de un notebook o dashboard de Quarto, en lugar de mostrar texto plano.
+
+---
+
+#### La clase `ResaltadorDeAbstracts`
+
+La solución está encapsulada en una **clase de Python**. Usar una clase permite agrupar los datos (listas de palabras, estilos CSS) junto con las acciones que los procesan (los métodos), haciendo el código más organizado y reutilizable.
+
+::: {.callout-note}
+Una **clase** es una plantilla que define atributos (datos que guarda el objeto) y métodos (acciones que puede realizar). Al escribir `ResaltadorDeAbstracts(...)` se crea una instancia, es decir, un objeto concreto listo para usar.
+:::
+
+##### Atributos de clase — los estilos CSS
+
+```python
+_ESTILO_INCLUSION = "background-color:#fff176; ..."
+_ESTILO_EXCLUSION = "background-color:#ffcdd2; ..."
+```
+
+Son **atributos de clase** (con prefijo `_` para indicar uso interno). Contienen cadenas de CSS inline que definen el color amarillo para inclusión y rojo para exclusión. Al centralizarlos aquí, cambiar un color solo requiere editar un lugar.
+
+##### Constructor — `__init__`
+
+```python
+def __init__(self, terminos_inclusion: list, terminos_exclusion: list):
+    self.terminos_inclusion = terminos_inclusion
+    self.terminos_exclusion = terminos_exclusion
+```
+
+El método especial `__init__` se ejecuta automáticamente al crear el objeto. Recibe las dos listas de palabras como parámetros y las guarda como **atributos de instancia** (con `self.`), haciéndolas accesibles desde todos los demás métodos.
+
+---
+
+#### Los métodos explicados
+
+##### `_aplicar_marcado` — el corazón del resaltado
+
+Este método busca y reemplaza las palabras en el texto. Se apoya en tres elementos del módulo `re`:
+
+**`re.escape(termino)`** — Escapa los caracteres especiales de regex que pudiera contener la palabra (como `.`, `+`, `*`) para que se busquen como texto literal y no como patrones especiales.
+
+**`re.compile(..., re.IGNORECASE)`** — Compila el patrón de búsqueda. La bandera `re.IGNORECASE` hace que la búsqueda ignore mayúsculas y minúsculas: encuentra `GPT`, `gpt` y `Gpt` por igual.
+
+**`patron.sub(funcion, texto)`** — Sustituye cada coincidencia usando una **función lambda**. En lugar de reemplazar por texto fijo, genera dinámicamente la etiqueta `<mark>` con el texto original encontrado.
+
+La función lambda merece atención especial:
+
+```python
+lambda m, est=estilo: f"<mark style='{est}'>{m.group(0)}</mark>"
+```
+
+- `m` es el objeto de coincidencia que entrega `re` en cada ocurrencia encontrada.
+- `m.group(0)` devuelve exactamente el texto tal como apareció en el abstract, preservando su capitalización original.
+- `est=estilo` captura el valor del estilo CSS en el momento de crear la lambda. Esto se llama *default argument binding* y evita que todas las lambdas terminen usando el mismo estilo por error.
+
+##### `resaltar` — orquesta el proceso
+
+```python
+def resaltar(self, texto: str) -> str:
+    texto = str(texto).replace("\n", " ")
+    texto = self._aplicar_marcado(texto, self.terminos_inclusion, self._ESTILO_INCLUSION)
+    texto = self._aplicar_marcado(texto, self.terminos_exclusion, self._ESTILO_EXCLUSION)
+    return texto
+```
+
+Primero convierte el texto a `str` por seguridad (para manejar valores nulos `NaN` que pueda tener el DataFrame), elimina los saltos de línea, y luego aplica los dos tipos de marcado en secuencia. El resultado es una cadena HTML lista para renderizar.
+
+##### `renderizar_todos` — recorre el DataFrame
+
+```python
+for numero, (_, fila) in enumerate(dataframe.iterrows(), start=1):
+```
+
+Dos conceptos clave en esta línea:
+
+**`DataFrame.iterrows()`** — Método de pandas que itera fila por fila sobre el DataFrame. En cada paso entrega una tupla `(índice, Serie)`. El índice se descarta con `_` (convención para indicar que no se usará) y la Serie da acceso a las columnas de esa fila.
+
+**`enumerate(..., start=1)`** — Función integrada de Python que añade un contador automático al iterable. Con `start=1` la numeración comienza en 1 en lugar de 0, para que el primer artículo sea "Artículo 1" y no "Artículo 0".
+
+Finalmente, todos los bloques HTML construidos se unen en una sola cadena con `"".join(bloques)` y se renderizan de una vez con `display(HTML(...))`, lo que es más eficiente que hacer múltiples llamadas a `display`.
+
+---
+
+#### Flujo completo resumido
+
+| Paso | Acción | Herramienta |
+|------|--------|-------------|
+| 1 | Leer el archivo CSV | `pandas.read_csv()` |
+| 2 | Definir las listas de palabras de inclusión y exclusión | Listas de Python |
+| 3 | Crear el objeto resaltador | Clase `ResaltadorDeAbstracts` |
+| 4 | Buscar coincidencias en cada abstract | `re.compile` + `re.IGNORECASE` |
+| 5 | Envolver coincidencias en etiquetas `<mark>` | `patron.sub()` con lambda |
+| 6 | Renderizar el resultado en el dashboard | `display(HTML(...))` |
