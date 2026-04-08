@@ -80,3 +80,9 @@ resaltador.renderizar_todos(df)
 ```
 
 Internamente usa `re.compile` con la bandera `re.IGNORECASE` para encontrar coincidencias sin importar mayúsculas, y `patron.sub()` con una función lambda para envolver cada coincidencia en una etiqueta `<mark>` con el estilo CSS correspondiente. El resultado se renderiza con `IPython.display.HTML`.
+
+---
+
+## Licencia
+
+Este proyecto está bajo la licencia MIT. Ver el archivo `LICENSE` para más detalles.
